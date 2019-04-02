@@ -1,5 +1,6 @@
 # wICA
-Wavelet enhanced Independent Component Analysis (wICA)
+
+## Wavelet enhanced Independent Component Analysis (wICA)
 
 The MATLAB Code is developed by: Nazareth P. Castellanos and Valeri A. Makarov.
 
