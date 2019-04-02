@@ -1,0 +1,138 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Example #2 showing the basic usage of wICA algorithm</title><meta name="generator" content="MATLAB 7.12"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2012-10-10"><meta name="DC.source" content="TestExample2.m"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>Example #2 showing the basic usage of wICA algorithm</h1><!--introduction--><p>For details see TestExample1. Data provided by: Yaseen Gerhold</p><p>Author: Valeri A. Makarov</p><p>e-mail: <a href="mailto:vmakarov@mat.ucm.es">vmakarov@mat.ucm.es</a></p><p><a href="http://www.mat.ucm.es/~vmakarov/index.html">http://www.mat.ucm.es/~vmakarov/index.html</a></p><p>Oct. 2012</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Reset environment</a></li><li><a href="#2">Load and plot data</a></li><li><a href="#3">ICA of EEG</a></li><li><a href="#4">wICA algorithm</a></li></ul></div><h2>Reset environment<a name="1"></a></h2><pre class="codeinput">clear <span class="string">all</span>
+close <span class="string">all</span>
+</pre><h2>Load and plot data<a name="2"></a></h2><pre class="codeinput">load(<span class="string">'./Data/Test_Data_wICA.set'</span>, <span class="string">'-mat'</span>)
+Fs = EEG.srate;
+nChns = EEG.nbchan;
+Data = floatread(<span class="string">'./Data/Test_Data_wICA.fdt'</span>,[nChns,Inf]);
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>)
+PlotEEG(Data, Fs, [], 150, <span class="string">'raw EEG data'</span>)
+</pre><img vspace="5" hspace="5" src="TestExample2_01.png" alt=""> <h2>ICA of EEG<a name="3"></a></h2><pre class="codeinput">[icaEEG, A, W] = fastica(Data,<span class="string">'stabilization'</span>,<span class="string">'off'</span>,<span class="string">'verbose'</span>,<span class="string">'off'</span>);
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(icaEEG, Fs, [], 12, <span class="string">'Independent Components'</span>);
+xlabel(<span class="string">'Time (s)'</span>)
+</pre><img vspace="5" hspace="5" src="TestExample2_02.png" alt=""> <h2>wICA algorithm<a name="4"></a></h2><pre class="codeinput">nICs = 1:size(icaEEG,1);
+Kthr = 1.1;
+ArtefThreshold = 7;
+verbose = <span class="string">'off'</span>;
+
+icaEEG2 = RemoveStrongArtifacts(icaEEG, nICs, Kthr, ArtefThreshold, Fs, verbose);
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(icaEEG2, Fs, [], 12, <span class="string">'wavelet filtered ICs'</span>);
+
+Data_wICA = A*icaEEG2;
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(Data_wICA, Fs, [], 150, <span class="string">'wICA cleanned EEG'</span>);
+</pre><img vspace="5" hspace="5" src="TestExample2_03.png" alt=""> <img vspace="5" hspace="5" src="TestExample2_04.png" alt=""> <p class="footer"><br>
+      Published with MATLAB&reg; 7.12<br></p></div><!--
+##### SOURCE BEGIN #####
+%% Example #2 showing the basic usage of wICA algorithm
+%
+% For details see TestExample1.
+% Data provided by: Yaseen Gerhold
+%
+% Author: Valeri A. Makarov
+%
+% e-mail: vmakarov@mat.ucm.es
+%
+% http://www.mat.ucm.es/~vmakarov/index.html
+%
+% Oct. 2012
+
+%% Reset environment
+clear all
+close all
+
+%% Load and plot data
+load('./Data/Test_Data_wICA.set', '-mat')
+Fs = EEG.srate;
+nChns = EEG.nbchan;
+Data = floatread('./Data/Test_Data_wICA.fdt',[nChns,Inf]);
+figure('color','w')
+PlotEEG(Data, Fs, [], 150, 'raw EEG data')
+
+%% ICA of EEG
+[icaEEG, A, W] = fastica(Data,'stabilization','off','verbose','off'); 
+figure('color','w');
+PlotEEG(icaEEG, Fs, [], 12, 'Independent Components');
+xlabel('Time (s)')
+
+%% wICA algorithm
+nICs = 1:size(icaEEG,1); 
+Kthr = 1.1;         
+ArtefThreshold = 7; 
+verbose = 'off';         
+
+icaEEG2 = RemoveStrongArtifacts(icaEEG, nICs, Kthr, ArtefThreshold, Fs, verbose); 
+figure('color','w');
+PlotEEG(icaEEG2, Fs, [], 12, 'wavelet filtered ICs');
+
+Data_wICA = A*icaEEG2;
+figure('color','w');
+PlotEEG(Data_wICA, Fs, [], 150, 'wICA cleanned EEG');
+
+##### SOURCE END #####
+--></body></html>

@@ -1,0 +1,11 @@
+This algorithm serves for illustration of the paper:  
+N.P. Castellanos and V.A. Makarov (2006), "Recovering EEG brain signals: Artifact 
+suppression with wavelet enhanced independent component analysis", J. Neurosci. Methods, 158, 300-312.
+
+To start up, use (study and execute) TestExample.m (see also Documentation folder).
+
+Please acknowledge our work.
+
+Enjoy, 
+Valeri A. Makarov
+vmakarov@mat.ucm.es

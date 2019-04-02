@@ -1,0 +1,323 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Example #1 showing the basic usage of wICA algorithm</title><meta name="generator" content="MATLAB 7.12"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2012-10-10"><meta name="DC.source" content="TestExample1.m"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>Example #1 showing the basic usage of wICA algorithm</h1><!--introduction--><p>This code is for illustration of the method described in: N.P. Castellanos and V.A. Makarov (2006). "Recovering EEG brain signals: Artifact suppression with wavelet enhanced independent component analysis" J. Neurosci. Methods 158, 300-&#150;312.</p><p>This code is copyright &copy; by the authors, and we hope you acknowledge our work. We distribute it in the hope that it will be useful, but without any warranty.</p><p>Author: Valeri A. Makarov</p><p>e-mail: <a href="mailto:vmakarov@mat.ucm.es">vmakarov@mat.ucm.es</a></p><p><a href="http://www.mat.ucm.es/~vmakarov/index.html">http://www.mat.ucm.es/~vmakarov/index.html</a></p><p>Modified: Oct. 2012</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Reset environment</a></li><li><a href="#2">Load test data</a></li><li><a href="#3">Conventional notch filter (you may add more)</a></li><li><a href="#4">Conventional High Pass Filter</a></li><li><a href="#5">Drop starting end ending 0.5s (remove edge perturbations)</a></li><li><a href="#6">Remove mean values from the channels and plot raw data</a></li><li><a href="#7">Find independent components</a></li><li><a href="#8">Common ICA artifact suppression method</a></li><li><a href="#9">wICA artifact rejection</a></li><li><a href="#10">Make comparative plots</a></li></ul></div><h2>Reset environment<a name="1"></a></h2><pre class="codeinput">close <span class="string">all</span>
+clear <span class="string">all</span>
+</pre><h2>Load test data<a name="2"></a></h2><pre class="codeinput">Fs = 256;  <span class="comment">% Sampling frequency in Hz</span>
+[Data, ChanTitels, FileName] = ReadTruScan_ascii(<span class="string">'./Data/test1.tdt'</span>);
+</pre><h2>Conventional notch filter (you may add more)<a name="3"></a></h2><p>This is an optional step (suppress 50Hz noise)</p><pre class="codeinput">Fnyq  = Fs/2;
+F_notch = 50; <span class="comment">% Notch at 50 Hz</span>
+[b,a] = iirnotch(F_notch/Fnyq, F_notch/Fnyq/20);
+Data  = filtfilt(b,a, Data);
+</pre><h2>Conventional High Pass Filter<a name="4"></a></h2><p>This is an optional step (suppress low &lt;4Hz frequency noise)</p><pre class="codeinput">F_cut = 4;
+[b,a] = ellip(1, 0.5, 20, F_cut/Fnyq, <span class="string">'high'</span>);
+Data  = filtfilt(b,a, Data);
+</pre><h2>Drop starting end ending 0.5s (remove edge perturbations)<a name="5"></a></h2><pre class="codeinput">Data = Data(129:end-128,:);
+</pre><h2>Remove mean values from the channels and plot raw data<a name="6"></a></h2><pre class="codeinput">Data  = detrend(Data,<span class="string">'constant'</span>);
+<span class="comment">% Transpose the data matrix to get (channel x time) orientation</span>
+Data = Data';
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(Data, Fs, ChanTitels, 200, <span class="string">'Raw data (19 channels 10-20 system)'</span>);
+</pre><img vspace="5" hspace="5" src="TestExample1_01.png" alt=""> <h2>Find independent components<a name="7"></a></h2><p>Here for ICA I use fastICA algorithm (package included, for details see the corresponding functions). Note: in the original paper runica from EEGLAB was used. You can also test other ICA algorithms at this step.</p><p>Note, the use of long (in time) data sets REDUCES the quality of artifact suppression (for details see the abovementioned paper). Split long files into segments and clean them separately.</p><pre class="codeinput">[icaEEG, A, W] = fastica(Data,<span class="string">'stabilization'</span>,<span class="string">'off'</span>,<span class="string">'verbose'</span>,<span class="string">'off'</span>);
+
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(icaEEG, Fs, [], [], <span class="string">'Independent Components'</span>);
+xlabel(<span class="string">'Time (s)'</span>)
+</pre><img vspace="5" hspace="5" src="TestExample1_02.png" alt=""> <h2>Common ICA artifact suppression method<a name="8"></a></h2><p>Remove artifact components and rebuild signals</p><p>An input dialog will be open, where you should enter the ICs (separated by coma) to be removed (those with artifacts)</p><pre class="codeinput">answer  = inputdlg({<span class="string">'Artifact ICs'</span>},<span class="string">'Components to remove'</span>,1);
+ArtICs = str2num(answer{1});
+disp([<span class="string">'Suppressed components: '</span> answer{1}]);
+icaEEG1 = icaEEG;
+icaEEG1(ArtICs, :) = 0;          <span class="comment">% suppress artifacts</span>
+Data_ICA = A*icaEEG1;            <span class="comment">% rebuild data</span>
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(Data_ICA, Fs, ChanTitels, 100, <span class="string">'ICA cleanned EEG (Note: the graph scale is different)'</span>);
+</pre><pre class="codeoutput">Suppressed components: 3,4,7
+</pre><img vspace="5" hspace="5" src="TestExample1_03.png" alt=""> <h2>wICA artifact rejection<a name="9"></a></h2><p>NOTE: For better artifact suppression, provide manually the numbers of components to be processed. You can also tune the other arguments for your data set.</p><pre class="codeinput">nICs = 1:size(icaEEG,1); <span class="comment">% Components to be processed, e.g. [1, 4:7]</span>
+Kthr = 1.25;             <span class="comment">% Tolerance for cleaning artifacts, try: 1, 1.15,...</span>
+ArtefThreshold = 4;      <span class="comment">% Threshold for detection of ICs with artefacts</span>
+                         <span class="comment">% Set lower values if you manually select ICs with</span>
+                         <span class="comment">% artifacts. Otherwise increase</span>
+verbose = <span class="string">'on'</span>;          <span class="comment">% print some intermediate results</span>
+
+icaEEG2 = RemoveStrongArtifacts(icaEEG, nICs, Kthr, ArtefThreshold, Fs, verbose);
+
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(icaEEG2, Fs, [], [], <span class="string">'wavelet filtered ICs'</span>);
+
+Data_wICA = A*icaEEG2;
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>);
+PlotEEG(Data_wICA, Fs, ChanTitels, 100, <span class="string">'wICA cleanned EEG'</span>);
+</pre><pre class="codeoutput">Calculating the component #1
+****. Too low threshold, set to default. Tolerance 0.253705
+Calculating the component #2
+****. Too low threshold, set to default. Tolerance 0.192510
+Calculating the component #3
+****. Too low threshold, set to default. Tolerance 0.189368
+Calculating the component #4
+*****. Achieved tolerance 0.001286
+Calculating the component #5
+****. Achieved tolerance 0.000123
+Calculating the component #6
+****. Too low threshold, set to default. Tolerance 0.340019
+Calculating the component #7
+***. Too low threshold, set to default. Tolerance 0.109686
+Calculating the component #8
+*****. Achieved tolerance 0.001883
+Calculating the component #9
+****. Too low threshold, set to default. Tolerance 0.329078
+Calculating the component #10
+**. Too low threshold, set to default. Tolerance 0.383752
+Calculating the component #11
+****. Achieved tolerance 0.000409
+Calculating the component #12
+******. Achieved tolerance 0.000094
+Calculating the component #13
+****. Too low threshold, set to default. Tolerance 0.211678
+Calculating the component #14
+**. Too low threshold, set to default. Tolerance 0.415181
+Calculating the component #15
+***. Too low threshold, set to default. Tolerance 0.112559
+Calculating the component #16
+****. Too low threshold, set to default. Tolerance 0.216559
+The component #17 passed unchaneged.
+The component #18 passed unchaneged.
+Calculating the component #19
+****. Too low threshold, set to default. Tolerance 0.195851
+</pre><img vspace="5" hspace="5" src="TestExample1_04.png" alt=""> <img vspace="5" hspace="5" src="TestExample1_05.png" alt=""> <h2>Make comparative plots<a name="10"></a></h2><p>In the first 2 subplots I plot a segment with (ocular) artifacts and an artifact-free segment. Note that in the artifact-free segment, good artifact suppression method should conserve (not perturb) the original EEG signal. 3rd subplot shows another example of artifact suppression.</p><pre class="codeinput">TimeInterval1 = [2, 6];
+TimeInterval2 = [2, 2.25];
+TimeInterval3 = [7.7, 8.7];
+
+figure(<span class="string">'color'</span>,<span class="string">'w'</span>,<span class="string">'position'</span>,[100 100 700 800])
+subplot(3,1,1);
+nT1 = round(TimeInterval1(1)*Fs); nT2 = round(TimeInterval1(2)*Fs);
+plot((nT1:nT2)/Fs, Data(1,nT1:nT2),<span class="string">'k'</span>,(nT1:nT2)/Fs, Data_ICA(1,nT1:nT2),<span class="string">'b'</span>,<span class="keyword">...</span>
+    (nT1:nT2)/Fs, Data_wICA(1,nT1:nT2),<span class="string">'r'</span>);
+xlim(TimeInterval1)
+xlabel(<span class="string">'Time (s)'</span>)
+legend({<span class="string">'Raw EEG'</span>,<span class="string">'ICA cleaned EEG'</span>,<span class="string">'wICA cleaned EEG'</span>},<span class="string">'Location'</span>,<span class="string">'NorthWest'</span>);
+title(<span class="string">'Segment with artifacts (FP1)'</span>)
+
+subplot(3,1,2);
+nT1 = round(TimeInterval2(1)*Fs); nT2 = round(TimeInterval2(2)*Fs);
+plot((nT1:nT2)/Fs, Data(1,nT1:nT2),<span class="string">'k'</span>,(nT1:nT2)/Fs, Data_ICA(1,nT1:nT2),<span class="string">'b'</span>,<span class="keyword">...</span>
+    (nT1:nT2)/Fs, Data_wICA(1,nT1:nT2),<span class="string">'r'</span>);
+xlim(TimeInterval2)
+title(<span class="string">'Amplified, outside of artifacts'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+
+subplot(3,1,3);
+nT1 = round(TimeInterval3(1)*Fs); nT2 = round(TimeInterval3(2)*Fs);
+plot((nT1:nT2)/Fs, Data(1,nT1:nT2),<span class="string">'k'</span>,(nT1:nT2)/Fs, Data_ICA(1,nT1:nT2),<span class="string">'b'</span>,<span class="keyword">...</span>
+    (nT1:nT2)/Fs, Data_wICA(1,nT1:nT2),<span class="string">'r'</span>);
+xlim(TimeInterval3)
+title(<span class="string">'Segment with another artifact'</span>)
+xlabel(<span class="string">'Time (s)'</span>)
+</pre><img vspace="5" hspace="5" src="TestExample1_06.png" alt=""> <p class="footer"><br>
+      Published with MATLAB&reg; 7.12<br></p></div><!--
+##### SOURCE BEGIN #####
+%% Example #1 showing the basic usage of wICA algorithm
+% This code is for illustration of the method described in:  
+% N.P. Castellanos and V.A. Makarov (2006). "Recovering EEG brain signals: Artifact 
+% suppression with wavelet enhanced independent component analysis"
+% J. Neurosci. Methods 158, 300-312.
+%
+% This code is copyright © by the authors, and we hope you acknowledge our
+% work. We distribute it in the hope that it will be useful, but without any warranty. 
+%
+% Author: Valeri A. Makarov
+%
+% e-mail: vmakarov@mat.ucm.es
+%
+% http://www.mat.ucm.es/~vmakarov/index.html
+%
+% Modified: Oct. 2012
+
+
+%% Reset environment
+close all
+clear all
+
+%% Load test data
+
+Fs = 256;  % Sampling frequency in Hz
+[Data, ChanTitels, FileName] = ReadTruScan_ascii('./Data/test1.tdt');
+
+%% Conventional notch filter (you may add more)
+% This is an optional step (suppress 50Hz noise) 
+
+Fnyq  = Fs/2;
+F_notch = 50; % Notch at 50 Hz
+[b,a] = iirnotch(F_notch/Fnyq, F_notch/Fnyq/20); 
+Data  = filtfilt(b,a, Data);
+
+%% Conventional High Pass Filter
+% This is an optional step (suppress low <4Hz frequency noise) 
+F_cut = 4;
+[b,a] = ellip(1, 0.5, 20, F_cut/Fnyq, 'high');
+Data  = filtfilt(b,a, Data);
+
+%% Drop starting end ending 0.5s (remove edge perturbations)
+
+Data = Data(129:end-128,:); 
+
+%% Remove mean values from the channels and plot raw data
+
+Data  = detrend(Data,'constant');
+% Transpose the data matrix to get (channel x time) orientation
+Data = Data';                     
+figure('color','w');
+PlotEEG(Data, Fs, ChanTitels, 200, 'Raw data (19 channels 10-20 system)');
+
+%% Find independent components
+% Here for ICA I use fastICA algorithm (package included, for details see 
+% the corresponding functions). Note: in the original paper runica from EEGLAB
+% was used. You can also test other ICA algorithms at this step.
+%
+% Note, the use of long (in time) data sets REDUCES the quality of artifact
+% suppression (for details see the abovementioned paper).
+% Split long files into segments and clean them separately.
+
+[icaEEG, A, W] = fastica(Data,'stabilization','off','verbose','off'); 
+
+figure('color','w');
+PlotEEG(icaEEG, Fs, [], [], 'Independent Components');
+xlabel('Time (s)')
+
+%% Common ICA artifact suppression method 
+% Remove artifact components and rebuild signals 
+%
+% An input dialog will be open, where you should enter 
+% the ICs (separated by coma) to be removed
+% (those with artifacts)
+
+answer  = inputdlg({'Artifact ICs'},'Components to remove',1);
+ArtICs = str2num(answer{1});
+disp(['Suppressed components: ' answer{1}]); 
+icaEEG1 = icaEEG;
+icaEEG1(ArtICs, :) = 0;          % suppress artifacts 
+Data_ICA = A*icaEEG1;            % rebuild data
+figure('color','w');
+PlotEEG(Data_ICA, Fs, ChanTitels, 100, 'ICA cleanned EEG (Note: the graph scale is different)');
+
+%% wICA artifact rejection 
+% NOTE: For better artifact suppression, provide manually the numbers 
+% of components to be processed. You can also tune the other arguments
+% for your data set.
+%
+
+nICs = 1:size(icaEEG,1); % Components to be processed, e.g. [1, 4:7]
+Kthr = 1.25;             % Tolerance for cleaning artifacts, try: 1, 1.15,...
+ArtefThreshold = 4;      % Threshold for detection of ICs with artefacts
+                         % Set lower values if you manually select ICs with 
+                         % artifacts. Otherwise increase
+verbose = 'on';          % print some intermediate results                         
+                         
+icaEEG2 = RemoveStrongArtifacts(icaEEG, nICs, Kthr, ArtefThreshold, Fs, verbose); 
+
+figure('color','w');
+PlotEEG(icaEEG2, Fs, [], [], 'wavelet filtered ICs');
+
+Data_wICA = A*icaEEG2;
+figure('color','w');
+PlotEEG(Data_wICA, Fs, ChanTitels, 100, 'wICA cleanned EEG');
+
+%% Make comparative plots
+% In the first 2 subplots I plot a segment with (ocular) artifacts 
+% and an artifact-free segment. 
+% Note that in the artifact-free segment, good artifact suppression method 
+% should conserve (not perturb) the original EEG signal.
+% 3rd subplot shows another example of artifact suppression.
+
+TimeInterval1 = [2, 6];
+TimeInterval2 = [2, 2.25];
+TimeInterval3 = [7.7, 8.7];
+
+figure('color','w','position',[100 100 700 800])
+subplot(3,1,1);
+nT1 = round(TimeInterval1(1)*Fs); nT2 = round(TimeInterval1(2)*Fs);
+plot((nT1:nT2)/Fs, Data(1,nT1:nT2),'k',(nT1:nT2)/Fs, Data_ICA(1,nT1:nT2),'b',...
+    (nT1:nT2)/Fs, Data_wICA(1,nT1:nT2),'r');
+xlim(TimeInterval1)
+xlabel('Time (s)')
+legend({'Raw EEG','ICA cleaned EEG','wICA cleaned EEG'},'Location','NorthWest');
+title('Segment with artifacts (FP1)')
+
+subplot(3,1,2);
+nT1 = round(TimeInterval2(1)*Fs); nT2 = round(TimeInterval2(2)*Fs);
+plot((nT1:nT2)/Fs, Data(1,nT1:nT2),'k',(nT1:nT2)/Fs, Data_ICA(1,nT1:nT2),'b',...
+    (nT1:nT2)/Fs, Data_wICA(1,nT1:nT2),'r');
+xlim(TimeInterval2)
+title('Amplified, outside of artifacts')
+xlabel('Time (s)')
+
+subplot(3,1,3);
+nT1 = round(TimeInterval3(1)*Fs); nT2 = round(TimeInterval3(2)*Fs);
+plot((nT1:nT2)/Fs, Data(1,nT1:nT2),'k',(nT1:nT2)/Fs, Data_ICA(1,nT1:nT2),'b',...
+    (nT1:nT2)/Fs, Data_wICA(1,nT1:nT2),'r');
+xlim(TimeInterval3)
+title('Segment with another artifact')
+xlabel('Time (s)')
+
+##### SOURCE END #####
+--></body></html>
